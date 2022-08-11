@@ -3,7 +3,6 @@ import {Component} from 'react'
 import Loader from 'react-loader-spinner'
 
 import Header from '../Header'
-import CoursesList from '../CoursesList'
 
 import './index.css'
 
@@ -14,30 +13,36 @@ const apiStatusConstants = {
   failure: 'FAILURE',
 }
 
-class Home extends Component {
+class CourseItemDetails extends Component {
   state = {
-    coursesList: [],
     apiStatus: apiStatusConstants.initial,
+    courseDetails: {},
   }
 
   componentDidMount() {
-    this.getCoursesList()
+    this.getCourseDetails()
   }
 
-  getCoursesList = async () => {
+  getCourseDetails = async () => {
     this.setState({apiStatus: apiStatusConstants.inProgress})
 
-    const response = await fetch('https://apis.ccbp.in/te/courses')
+    const {match} = this.props
+    const {params} = match
+    const {id} = params
+
+    const apiUrl = `https://apis.ccbp.in/te/courses/${id}`
+    const response = await fetch(apiUrl)
     const fetchedData = await response.json()
 
     if (response.ok === true) {
-      const updatedData = fetchedData.courses.map(eachCourses => ({
-        id: eachCourses.id,
-        name: eachCourses.name,
-        logoUrl: eachCourses.logo_url,
-      }))
+      const updatedData = {
+        id: fetchedData.course_details.id,
+        name: fetchedData.course_details.name,
+        description: fetchedData.course_details.description,
+        imageUrl: fetchedData.course_details.image_url,
+      }
       this.setState({
-        coursesList: updatedData,
+        courseDetails: updatedData,
         apiStatus: apiStatusConstants.success,
       })
     } else {
@@ -52,15 +57,16 @@ class Home extends Component {
   )
 
   renderSuccessView = () => {
-    const {coursesList} = this.state
+    const {courseDetails} = this.state
+    const {name, description, imageUrl} = courseDetails
 
     return (
-      <div className="success-container">
-        <ul className="course-list-container">
-          {coursesList.map(eachCourse => (
-            <CoursesList key={eachCourse.id} courseDetails={eachCourse} />
-          ))}
-        </ul>
+      <div className="course-item-details">
+        <img src={imageUrl} alt={name} className="course-image" />
+        <div className="course-name-and-description-container">
+          <h1 className="course-title">{name}</h1>
+          <p className="course-description">{description}</p>
+        </div>
       </div>
     )
   }
@@ -79,7 +85,7 @@ class Home extends Component {
       <button
         type="button"
         className="retry-button"
-        onClick={() => this.getCoursesList()}
+        onClick={() => this.getCourseDetails()}
       >
         Retry
       </button>
@@ -105,13 +111,10 @@ class Home extends Component {
     return (
       <>
         <Header />
-        <div className="home-container">
-          <h1 className="home-heading">Courses</h1>
-          {this.renderAllViews()}
-        </div>
+        <div className="course-detailed-container">{this.renderAllViews()}</div>
       </>
     )
   }
 }
 
-export default Home
+export default CourseItemDetails
